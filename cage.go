@@ -8,22 +8,22 @@ import (
 	"time"
 )
 
-type container struct {
+type Container struct {
 	backupStdout *os.File
 	writerStdout *os.File
 	backupStderr *os.File
 	writerStderr *os.File
 
-	data         string
-	channel      chan string
+	data    string
+	channel chan string
 
 	Data []string
 }
 
-func Start() *container {
+func Start() *Container {
 	rStdout, wStdout, _ := os.Pipe()
 	rStderr, wStderr, _ := os.Pipe()
-	c := &container{
+	c := &Container{
 		backupStdout: os.Stdout,
 		writerStdout: wStdout,
 
@@ -49,7 +49,7 @@ func Start() *container {
 		}
 	}(c.channel, rStdout, rStderr)
 
-	go func(c *container) {
+	go func(c *Container) {
 		for {
 			select {
 			case out := <-c.channel:
@@ -61,7 +61,7 @@ func Start() *container {
 	return c
 }
 
-func Stop(c *container) {
+func Stop(c *Container) {
 	_ = c.writerStdout.Close()
 	_ = c.writerStderr.Close()
 	time.Sleep(10 * time.Millisecond)
