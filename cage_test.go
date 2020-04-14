@@ -40,4 +40,6 @@ func TestStart(t *testing.T) {
 	Stop(c)
 
 	equalFiles(t, lfn, "testdata/test0123.txt")
+
+	os.Remove(lfn)
 }
