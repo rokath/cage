@@ -17,9 +17,6 @@ type Container struct {
 	sChannel chan string // channel for os.Stdout messages
 	eChannel chan string // channel for os.Stderr messages
 
-	//data   string
-	//Data []string
-
 	lfHandle *os.File // logfile handle
 }
 
@@ -103,9 +100,4 @@ func Stop(c *Container) {
 	os.Stderr = c.origStderr
 
 	c.lfHandle.Close()
-
-	//c.Data = strings.Split(c.data, "\n")
-	//if c.Data[len(c.Data)-1] == "" {
-	//	c.Data = c.Data[:len(c.Data)-1]
-	//}
 }

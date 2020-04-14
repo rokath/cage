@@ -4,35 +4,40 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/udhos/equalfile"
 )
 
+func equalFileContent(fn0, fn1 string) bool {
+	cmp := equalfile.New(nil, equalfile.Options{}) // compare using single mode
+	ok, err := cmp.CompareFile(fn0, fn1)
+	if nil != err {
+		ok = false
+	}
+	return ok
+}
+
+func equalFiles(t *testing.T, fn0, fn1 string) {
+	ok := equalFileContent(fn0, fn1)
+	if false == ok {
+		t.FailNow()
+	}
+}
 func TestStart(t *testing.T) {
-	c := Start("logfile.txt")
+	lfn := "testdata/logfile.txt"
+	os.Remove(lfn)
 
-	fmt.Println("test")
-	fmt.Println("test2")
-	fmt.Fprintln(os.Stderr, "stderr error")
-
+	c := Start(lfn)
+	fmt.Println("test0")
+	fmt.Fprintln(os.Stderr, "test1")
 	Stop(c)
-	/*
 
-		test
-		test2
-		stderr error
+	equalFiles(t, lfn, "testdata/test01.txt")
 
+	c = Start(lfn)
+	fmt.Println("test2")
+	fmt.Println("test3")
+	Stop(c)
 
-				fmt.Println(c.Data)
-
-				if len(c.Data) != 3 {
-					t.Error("Data length should be 3")
-				}
-				if c.Data[0] != "test" {
-					t.Errorf("First line should be 'test', instead of %s", c.Data[0])
-				}
-				if c.Data[1] != "test2" {
-					t.Errorf("Second line should be 'test2', instead of %s", c.Data[1])
-				}
-				if c.Data[2] != "stderr error" {
-					t.Errorf("Third line should be 'stderr error', instead of %s", c.Data[2])
-				}*/
+	equalFiles(t, lfn, "testdata/test0123.txt")
 }
