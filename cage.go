@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Container keeps re-direction informantion
 type Container struct {
 	oldLog io.Writer // old
 
@@ -26,6 +27,12 @@ type Container struct {
 // Start does append all output parallel into a logfile with name fn
 func Start(fn string) *Container {
 
+	// start logging only if fn not "none"
+	if "none" == fn {
+		log.Println("No logfile")
+		return nil
+	}
+
 	// open logfile
 	lfH, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -38,7 +45,7 @@ func Start(fn string) *Container {
 	rStdout, wStdout, _ := os.Pipe()
 	rStderr, wStderr, _ := os.Pipe()
 
-	// create container
+	// create container for recovering
 	c := &Container{
 		oldLog: log.Writer(),
 
@@ -56,17 +63,15 @@ func Start(fn string) *Container {
 
 	// re-direct
 	log.SetOutput(io.MultiWriter(c.oldLog, c.lfHandle)) // writing to log will go also to logfile now
-	os.Stdout = c.writerStdout                          // all to os.Stdout goees now to c.writerStdout
-	os.Stderr = c.writerStderr                          // all to os.Stderr goees now to c.writerStderr
 
-	// writing to os.Stdout will go to pipe and come out of rStdout now
-	// writing to os.Stderr will go to pipe and come out of rStderr now
+	os.Stdout = c.writerStdout // all to os.Stdout goees now to c.writerStdout and comee out of rStdout now
+	os.Stderr = c.writerStderr // all to os.Stderr goees now to c.writerStderr and comes out of rStderr now
 
 	// create duplication
 	teeOut := io.MultiWriter(c.origStdout, c.lfHandle)
 	teeErr := io.MultiWriter(c.origStderr, c.lfHandle)
 
-	// pipes reader
+	// pipes reader and channel writer
 	go func(sout, eout chan string, readerStdout *os.File, readerStderr *os.File) {
 		var bufStdout bytes.Buffer
 		// _, _ = io.Copy(teeOut, readerStdout) // CHECK this
@@ -82,6 +87,7 @@ func Start(fn string) *Container {
 		}
 	}(c.sChannel, c.eChannel, rStdout, rStderr)
 
+	// channel reader and multi writer
 	go func(c *Container) {
 		for {
 			select {
@@ -98,13 +104,24 @@ func Start(fn string) *Container {
 
 // Stop does return to normal state
 func Stop(c *Container) {
+
+	// only if loggig was enabled
+	if nil == c {
+		return
+	}
+
+	// close pipes
 	_ = c.writerStdout.Close()
 	_ = c.writerStderr.Close()
+
+	// wait
 	time.Sleep(10 * time.Millisecond)
 
+	// restore
 	os.Stdout = c.origStdout
 	os.Stderr = c.origStderr
 	log.SetOutput(c.oldLog)
 
+	// logfile
 	c.lfHandle.Close()
 }
