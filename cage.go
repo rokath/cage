@@ -3,11 +3,14 @@ package cage
 import (
 	"bytes"
 	"io"
+	"log"
 	"os"
 	"time"
 )
 
 type Container struct {
+	oldLog io.Writer // old
+
 	origStdout   *os.File // old
 	writerStdout *os.File // new
 
@@ -37,6 +40,8 @@ func Start(fn string) *Container {
 
 	// create container
 	c := &Container{
+		oldLog: log.Writer(),
+
 		origStdout:   os.Stdout,
 		writerStdout: wStdout,
 
@@ -50,8 +55,9 @@ func Start(fn string) *Container {
 	}
 
 	// re-direct
-	os.Stdout = c.writerStdout // all to os.Stdout goees now to c.writerStdout
-	os.Stderr = c.writerStderr // all to os.Stderr goees now to c.writerStderr
+	log.SetOutput(io.MultiWriter(c.oldLog, c.lfHandle)) // writing to log will go also to logfile now
+	os.Stdout = c.writerStdout                          // all to os.Stdout goees now to c.writerStdout
+	os.Stderr = c.writerStderr                          // all to os.Stderr goees now to c.writerStderr
 
 	// writing to os.Stdout will go to pipe and come out of rStdout now
 	// writing to os.Stderr will go to pipe and come out of rStderr now
@@ -98,6 +104,7 @@ func Stop(c *Container) {
 
 	os.Stdout = c.origStdout
 	os.Stderr = c.origStderr
+	log.SetOutput(c.oldLog)
 
 	c.lfHandle.Close()
 }

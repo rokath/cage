@@ -2,6 +2,7 @@ package cage
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -67,7 +68,8 @@ func TestStart(t *testing.T) {
 	ok(t, err)
 
 	c = Start(lfn)
-	fmt.Println("test2")
+	log.SetFlags(0)
+	log.Println("test2")
 	fmt.Println("test3")
 	Stop(c)
 
