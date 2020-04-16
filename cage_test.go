@@ -36,45 +36,75 @@ func equalFiles(t *testing.T, fn0, fn1 string) {
 	}
 }
 func TestStart(t *testing.T) {
-	lfn := "logfile.txt"
-	efn := "explogf.txt"
+
+	lfn := "./testdata/act.log"
+	efn := "./testdata/exp.log"
+
+	// clear
 	os.Remove(lfn)
 	os.Remove(efn)
 
+	// write expectation
 	efh, err := os.OpenFile(efn, os.O_RDWR|os.O_CREATE, 0666)
 	ok(t, err)
-	_, err = fmt.Fprintln(efh, "test0")
+	_, err = fmt.Fprintln(efh, "log00")
 	ok(t, err)
-	_, err = fmt.Fprintln(efh, "test1")
+	_, err = fmt.Fprintln(efh, "fmt01")
+	ok(t, err)
+	_, err = fmt.Fprintln(efh, "err02")
 	ok(t, err)
 	err = efh.Close()
 	ok(t, err)
 
+	// start logging
 	c := Start(lfn)
-	fmt.Println("test0")
-	fmt.Fprintln(os.Stderr, "test1")
-	Stop(c)
 
+	// produce logs
+	log.SetFlags(0)
+	fmt.Println("fmt01")
+	fmt.Fprintln(os.Stderr, "err02")
+	log.Println("log00")
+
+	// expect written data before close
 	equalFiles(t, lfn, efn)
 
+	// stop logging
+	Stop(c)
+
+	// expect written data after close
+	equalFiles(t, lfn, efn)
+
+	// continue expectation
 	efh, err = os.OpenFile(efn, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	ok(t, err)
-
-	_, err = fmt.Fprintln(efh, "test2")
+	_, err = fmt.Fprintln(efh, "log10")
 	ok(t, err)
-	_, err = fmt.Fprintln(efh, "test3")
+	_, err = fmt.Fprintln(efh, "fmt11")
+	ok(t, err)
+	_, err = fmt.Fprintln(efh, "err12")
 	ok(t, err)
 	err = efh.Close()
 	ok(t, err)
 
+	// continue logging
 	c = Start(lfn)
-	log.SetFlags(0)
-	log.Println("test2")
-	fmt.Println("test3")
-	Stop(c)
 
+	// produce logs
+	log.SetFlags(0)
+	fmt.Println("fmt11")
+	fmt.Fprintln(os.Stderr, "err12")
+	log.Println("log10")
+
+	// expect written data before close
 	equalFiles(t, lfn, efn)
 
+	// stop logging
+	Stop(c)
+
+	// expect written data after close
+	equalFiles(t, lfn, efn)
+
+	// clean up
 	err = os.Remove(lfn)
 	ok(t, err)
 	err = os.Remove(efn)
