@@ -66,12 +66,12 @@ func Start(fn string) *Container {
 	teeErr := io.MultiWriter(c.origStderr, c.lfHandle)
 
 	// copy from pipe to tee
-	go func() {
-		io.Copy(teeOut, rStdout)
-	}()
-	go func() {
-		io.Copy(teeErr, rStderr)
-	}()
+	go func(w io.Writer, r io.Reader) {
+		io.Copy(w, r)
+	}(teeOut, rStdout)
+	go func(w io.Writer, r io.Reader) {
+		io.Copy(w, r)
+	}(teeErr, rStderr)
 
 	return c
 }
